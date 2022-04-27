@@ -25,13 +25,24 @@ type Session struct {
 	Description string
 }
 
+type TrackerClock interface {
+	Now() int64
+}
+
+type RealClock struct{}
+
+func (tc RealClock) Now() int64 {
+	return time.Now().Unix()
+}
+
 type Tracker struct {
+	Clock    TrackerClock
 	Current  Session
 	Sessions []Session
 }
 
 func (t *Tracker) Start() {
-	t.Current.Start = time.Now().Unix()
+	t.Current.Start = t.Clock.Now()
 }
 
 func (t *Tracker) End() error {
@@ -39,7 +50,7 @@ func (t *Tracker) End() error {
 		return errors.New("description cannot be empty")
 	}
 
-	t.Current.End = time.Now().Unix()
+	t.Current.End = t.Clock.Now()
 
 	t.Sessions = append(t.Sessions, t.Current)
 
@@ -74,4 +85,8 @@ func (t *Tracker) DeleteByIndex(index int) error {
 	t.Sessions = append(t.Sessions[:index], t.Sessions[index+1:]...)
 
 	return nil
+}
+
+func (t *Tracker) DeleteAll() {
+	t.Sessions = []Session{}
 }

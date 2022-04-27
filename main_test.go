@@ -2,13 +2,24 @@ package main
 
 import (
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
 )
 
+type StubClock struct {
+	time int64
+	inc  int64
+}
+
+func (sc *StubClock) Now() int64 {
+	sc.time += sc.inc
+	return sc.time
+}
+
 func TestCanStartASession(t *testing.T) {
-	tracker := Tracker{}
+	tracker := Tracker{
+		Clock: RealClock{},
+	}
 
 	tracker.Start()
 
@@ -18,7 +29,9 @@ func TestCanStartASession(t *testing.T) {
 }
 
 func TestCanEndASessionThatHasStarted(t *testing.T) {
-	tracker := Tracker{}
+	tracker := Tracker{
+		Clock: RealClock{},
+	}
 
 	tracker.Start()
 
@@ -32,15 +45,17 @@ func TestCanEndASessionThatHasStarted(t *testing.T) {
 }
 
 func TestEndedSessionContainsTheCorrectPeriodLength(t *testing.T) {
-	tracker := Tracker{}
+	tracker := Tracker{
+		Clock: &StubClock{
+			inc: 5,
+		},
+	}
 
 	tracker.SetDescription("test")
 
 	tracker.Start()
 
 	expected := 5
-
-	time.Sleep(time.Duration(expected) * time.Second)
 
 	tracker.End()
 
@@ -54,7 +69,9 @@ func TestEndedSessionContainsTheCorrectPeriodLength(t *testing.T) {
 }
 
 func TestCurrentShouldResetAfterEndingSession(t *testing.T) {
-	tracker := Tracker{}
+	tracker := Tracker{
+		Clock: RealClock{},
+	}
 
 	tracker.Start()
 
@@ -68,7 +85,9 @@ func TestCurrentShouldResetAfterEndingSession(t *testing.T) {
 }
 
 func TestCanManuallyAddSession(t *testing.T) {
-	tracker := Tracker{}
+	tracker := Tracker{
+		Clock: RealClock{},
+	}
 
 	session := Session{
 		Start:       10,
@@ -84,7 +103,9 @@ func TestCanManuallyAddSession(t *testing.T) {
 }
 
 func TestEndTimeMustBeAfterStartTime(t *testing.T) {
-	tracker := Tracker{}
+	tracker := Tracker{
+		Clock: RealClock{},
+	}
 
 	session := Session{
 		Start:       1000,
@@ -100,7 +121,9 @@ func TestEndTimeMustBeAfterStartTime(t *testing.T) {
 }
 
 func TestManualSessionMustHaveDescription(t *testing.T) {
-	tracker := Tracker{}
+	tracker := Tracker{
+		Clock: RealClock{},
+	}
 
 	session := Session{
 		Start: 0,
@@ -115,7 +138,9 @@ func TestManualSessionMustHaveDescription(t *testing.T) {
 }
 
 func TestCanSetDescriptionForCurrentSession(t *testing.T) {
-	tracker := Tracker{}
+	tracker := Tracker{
+		Clock: RealClock{},
+	}
 
 	tracker.Start()
 
@@ -127,7 +152,9 @@ func TestCanSetDescriptionForCurrentSession(t *testing.T) {
 }
 
 func TestCurrentSessionCannotEndIfDescriptionIsEmpty(t *testing.T) {
-	tracker := Tracker{}
+	tracker := Tracker{
+		Clock: RealClock{},
+	}
 
 	tracker.Start()
 
@@ -139,7 +166,9 @@ func TestCurrentSessionCannotEndIfDescriptionIsEmpty(t *testing.T) {
 }
 
 func TestCanDeleteSessionByIndex(t *testing.T) {
-	tracker := Tracker{}
+	tracker := Tracker{
+		Clock: RealClock{},
+	}
 
 	remainingSession := Session{
 		Start:       0,
@@ -167,7 +196,9 @@ func TestCanDeleteSessionByIndex(t *testing.T) {
 }
 
 func TestCannotDeleteIfIndexIsOutOfRange(t *testing.T) {
-	tracker := Tracker{}
+	tracker := Tracker{
+		Clock: RealClock{},
+	}
 
 	err := tracker.DeleteByIndex(100)
 
@@ -177,11 +208,43 @@ func TestCannotDeleteIfIndexIsOutOfRange(t *testing.T) {
 }
 
 func TestDeleteIndexCannotBeNegative(t *testing.T) {
-	tracker := Tracker{}
+	tracker := Tracker{
+		Clock: RealClock{},
+	}
 
 	err := tracker.DeleteByIndex(-1)
 
 	if err == nil {
 		t.Error("Expected error got none")
+	}
+}
+
+func TestCanDeleteAllSessions(t *testing.T) {
+	tracker := Tracker{
+		Clock: RealClock{},
+	}
+
+	tracker.Add(Session{
+		Start:       10,
+		End:         20,
+		Description: "test 1",
+	})
+
+	tracker.Add(Session{
+		Start:       10,
+		End:         20,
+		Description: "test 2",
+	})
+
+	tracker.Add(Session{
+		Start:       10,
+		End:         20,
+		Description: "test 3",
+	})
+
+	tracker.DeleteAll()
+
+	if len(tracker.Sessions) != 0 {
+		t.Errorf("Expected no sessions, got %d", len(tracker.Sessions))
 	}
 }
