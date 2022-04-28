@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"time"
 )
 
@@ -17,53 +19,61 @@ func main() {
 	// remove time
 
 	// clear all
+
+	// save
+
+	// restore
 }
 
-type Session struct {
+type session struct {
 	Start       int64
 	End         int64
 	Description string
 }
 
-type TrackerClock interface {
+type trackerClock interface {
 	Now() int64
 }
 
-type RealClock struct{}
+type realClock struct{}
 
-func (tc RealClock) Now() int64 {
+func (tc realClock) Now() int64 {
 	return time.Now().Unix()
 }
 
-type Tracker struct {
-	Clock    TrackerClock
-	Current  Session
-	Sessions []Session
+type trackerData struct {
+	Current  session   `json:"current"`
+	Sessions []session `json:"sessions"`
 }
 
-func (t *Tracker) Start() {
-	t.Current.Start = t.Clock.Now()
+type tracker struct {
+	clock trackerClock
+	trackerData
 }
 
-func (t *Tracker) End() error {
+func (t *tracker) Start() {
+	t.Current.Start = t.clock.Now()
+}
+
+func (t *tracker) End() error {
 	if t.Current.Description == "" {
 		return errors.New("description cannot be empty")
 	}
 
-	t.Current.End = t.Clock.Now()
+	t.Current.End = t.clock.Now()
 
 	t.Sessions = append(t.Sessions, t.Current)
 
-	t.Current = Session{}
+	t.Current = session{}
 
 	return nil
 }
 
-func (t *Tracker) SetDescription(description string) {
+func (t *tracker) SetDescription(description string) {
 	t.Current.Description = description
 }
 
-func (t *Tracker) Add(session Session) error {
+func (t *tracker) Add(session session) error {
 	if session.End-session.Start <= 0 {
 		return errors.New("end time must be greater than start")
 	}
@@ -77,7 +87,7 @@ func (t *Tracker) Add(session Session) error {
 	return nil
 }
 
-func (t *Tracker) DeleteByIndex(index int) error {
+func (t *tracker) DeleteByIndex(index int) error {
 	if index < 0 || index >= len(t.Sessions) {
 		return errors.New("index is invalid")
 	}
@@ -87,6 +97,12 @@ func (t *Tracker) DeleteByIndex(index int) error {
 	return nil
 }
 
-func (t *Tracker) DeleteAll() {
-	t.Sessions = []Session{}
+func (t *tracker) DeleteAll() {
+	t.Sessions = []session{}
+}
+
+func (t *tracker) Save() {
+	fileContent, _ := json.Marshal(t)
+
+	ioutil.WriteFile("test.json", fileContent, 0644)
 }
