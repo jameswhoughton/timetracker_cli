@@ -254,8 +254,15 @@ func TestCanDeleteAllSessions(t *testing.T) {
 }
 
 func TestCanWriteToFile(t *testing.T) {
+	fileName := "test.json"
+
+	config := trackerConfig{
+		file: fileName,
+	}
+
 	tracker := tracker{
-		clock: realClock{},
+		config: config,
+		clock:  realClock{},
 	}
 
 	tracker.Add(session{
@@ -270,13 +277,13 @@ func TestCanWriteToFile(t *testing.T) {
 
 	tracker.Save()
 
-	if _, err := os.Stat("test.json"); errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(fileName); errors.Is(err, os.ErrNotExist) {
 		t.Fatal("Expected file test.json to exist")
 	}
 
-	file, _ := ioutil.ReadFile("test.json")
+	file, _ := ioutil.ReadFile(fileName)
 
-	defer os.Remove("test.json")
+	defer os.Remove(fileName)
 
 	expected := trackerData{
 		Current:  tracker.Current,
@@ -289,5 +296,73 @@ func TestCanWriteToFile(t *testing.T) {
 
 	if !cmp.Equal(expected, got) {
 		t.Errorf("Expected %+v got %+v", expected, got)
+	}
+}
+
+func TestCanSetPathOfSaveFile(t *testing.T) {
+	fileName := "test_file_name.xyz"
+
+	config := trackerConfig{
+		file: fileName,
+	}
+
+	tracker := tracker{
+		config: config,
+	}
+
+	tracker.Save()
+
+	defer os.Remove(fileName)
+
+	if _, err := os.Stat(fileName); errors.Is(err, os.ErrNotExist) {
+		t.Errorf("Expected file %s to exist", fileName)
+	}
+}
+
+func TestCanRestoreFromFile(t *testing.T) {
+	currentSession := session{
+		Start:       123,
+		End:         5676,
+		Description: "dfgebsddsfsdf",
+	}
+
+	sessions := []session{
+		{
+			Start:       50,
+			End:         34,
+			Description: "TEST",
+		},
+		{
+			Start:       80,
+			End:         100,
+			Description: "fff",
+		},
+	}
+
+	data := trackerData{
+		Current:  currentSession,
+		Sessions: sessions,
+	}
+
+	fileContent, _ := json.Marshal(data)
+
+	fileName := "test.json"
+
+	ioutil.WriteFile(fileName, fileContent, 0644)
+
+	defer os.Remove(fileName)
+
+	config := trackerConfig{
+		file: fileName,
+	}
+
+	tracker := tracker{
+		config: config,
+	}
+
+	tracker.Restore()
+
+	if !cmp.Equal(tracker.trackerData, data) {
+		t.Errorf("Expected %+v, got %+v", data, tracker.trackerData)
 	}
 }

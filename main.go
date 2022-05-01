@@ -46,8 +46,13 @@ type trackerData struct {
 	Sessions []session `json:"sessions"`
 }
 
+type trackerConfig struct {
+	file string
+}
+
 type tracker struct {
-	clock trackerClock
+	config trackerConfig
+	clock  trackerClock
 	trackerData
 }
 
@@ -104,5 +109,15 @@ func (t *tracker) DeleteAll() {
 func (t *tracker) Save() {
 	fileContent, _ := json.Marshal(t)
 
-	ioutil.WriteFile("test.json", fileContent, 0644)
+	ioutil.WriteFile(t.config.file, fileContent, 0644)
+}
+
+func (t *tracker) Restore() {
+	fileContents, _ := ioutil.ReadFile(t.config.file)
+
+	restoredData := trackerData{}
+
+	json.Unmarshal([]byte(fileContents), &restoredData)
+
+	t.trackerData = restoredData
 }
