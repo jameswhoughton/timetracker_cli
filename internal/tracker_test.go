@@ -1,4 +1,4 @@
-package main
+package internal
 
 import (
 	"encoding/json"
@@ -20,10 +20,15 @@ func (sc *StubClock) Now() int64 {
 	return sc.time
 }
 
-func TestCanStartASession(t *testing.T) {
-	tracker := tracker{
-		clock: realClock{},
+func newTestTracker(clock trackerClock, config TrackerConfig) *Tracker {
+	return &Tracker{
+		clock:  clock,
+		config: config,
 	}
+}
+
+func TestCanStartASession(t *testing.T) {
+	tracker := NewTracker(TrackerConfig{})
 
 	tracker.Start()
 
@@ -33,27 +38,33 @@ func TestCanStartASession(t *testing.T) {
 }
 
 func TestCanEndASessionThatHasStarted(t *testing.T) {
-	tracker := tracker{
-		clock: realClock{},
+	clock := &StubClock{
+		inc: 5,
 	}
+
+	tracker := newTestTracker(clock, TrackerConfig{})
 
 	tracker.Start()
 
 	tracker.SetDescription("test")
 
-	tracker.End()
+	err := tracker.End()
+
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if len(tracker.Sessions) != 1 {
-		t.Errorf("Expected 1 recorded session, got %d", len(tracker.Sessions))
+		t.Errorf("Expected 1 recorded Session, got %d", len(tracker.Sessions))
 	}
 }
 
 func TestEndedSessionContainsTheCorrectPeriodLength(t *testing.T) {
-	tracker := tracker{
-		clock: &StubClock{
-			inc: 5,
-		},
+	clock := &StubClock{
+		inc: 5,
 	}
+
+	tracker := newTestTracker(clock, TrackerConfig{})
 
 	tracker.SetDescription("test")
 
@@ -65,59 +76,61 @@ func TestEndedSessionContainsTheCorrectPeriodLength(t *testing.T) {
 
 	lastSession := tracker.Sessions[len(tracker.Sessions)-1]
 
-	sessionLength := lastSession.End - lastSession.Start
+	SessionLength := lastSession.End - lastSession.Start
 
-	if sessionLength != 5 {
-		t.Errorf("Expected session length of %d got %d", expected, sessionLength)
+	if SessionLength != 5 {
+		t.Errorf("Expected Session length of %d got %d", expected, SessionLength)
 	}
 }
 
 func TestCurrentShouldResetAfterEndingSession(t *testing.T) {
-	tracker := tracker{
-		clock: realClock{},
+	clock := &StubClock{
+		inc: 5,
 	}
+
+	tracker := newTestTracker(clock, TrackerConfig{})
 
 	tracker.Start()
 
 	tracker.SetDescription("test")
 
-	tracker.End()
+	err := tracker.End()
+
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if tracker.Current.Start != 0 {
-		t.Error("Expected current session to reset after completion")
+		t.Error("Expected current Session to reset after completion")
 	}
 }
 
 func TestCanManuallyAddSession(t *testing.T) {
-	tracker := tracker{
-		clock: realClock{},
-	}
+	tracker := NewTracker(TrackerConfig{})
 
-	session := session{
+	Session := Session{
 		Start:       10,
 		End:         100,
 		Description: "test",
 	}
 
-	tracker.Add(session)
+	tracker.Add(Session)
 
 	if len(tracker.Sessions) != 1 {
-		t.Errorf("Expected 1 recorded session, got %d", len(tracker.Sessions))
+		t.Errorf("Expected 1 recorded Session, got %d", len(tracker.Sessions))
 	}
 }
 
 func TestEndTimeMustBeAfterStartTime(t *testing.T) {
-	tracker := tracker{
-		clock: realClock{},
-	}
+	tracker := NewTracker(TrackerConfig{})
 
-	session := session{
+	Session := Session{
 		Start:       1000,
 		End:         100,
 		Description: "test",
 	}
 
-	err := tracker.Add(session)
+	err := tracker.Add(Session)
 
 	if err == nil {
 		t.Error("Expected error, got none")
@@ -125,16 +138,14 @@ func TestEndTimeMustBeAfterStartTime(t *testing.T) {
 }
 
 func TestManualSessionMustHaveDescription(t *testing.T) {
-	tracker := tracker{
-		clock: realClock{},
-	}
+	tracker := NewTracker(TrackerConfig{})
 
-	session := session{
+	Session := Session{
 		Start: 0,
 		End:   100,
 	}
 
-	err := tracker.Add(session)
+	err := tracker.Add(Session)
 
 	if err == nil {
 		t.Error("Expected error, got none")
@@ -142,9 +153,7 @@ func TestManualSessionMustHaveDescription(t *testing.T) {
 }
 
 func TestCanSetDescriptionForCurrentSession(t *testing.T) {
-	tracker := tracker{
-		clock: realClock{},
-	}
+	tracker := NewTracker(TrackerConfig{})
 
 	tracker.Start()
 
@@ -156,9 +165,7 @@ func TestCanSetDescriptionForCurrentSession(t *testing.T) {
 }
 
 func TestCurrentSessionCannotEndIfDescriptionIsEmpty(t *testing.T) {
-	tracker := tracker{
-		clock: realClock{},
-	}
+	tracker := NewTracker(TrackerConfig{})
 
 	tracker.Start()
 
@@ -170,11 +177,9 @@ func TestCurrentSessionCannotEndIfDescriptionIsEmpty(t *testing.T) {
 }
 
 func TestCanDeleteSessionByIndex(t *testing.T) {
-	tracker := tracker{
-		clock: realClock{},
-	}
+	tracker := NewTracker(TrackerConfig{})
 
-	remainingSession := session{
+	remainingSession := Session{
 		Start:       0,
 		End:         10,
 		Description: "test",
@@ -182,7 +187,7 @@ func TestCanDeleteSessionByIndex(t *testing.T) {
 
 	tracker.Add(remainingSession)
 
-	tracker.Add(session{
+	tracker.Add(Session{
 		Start:       10,
 		End:         20,
 		Description: "test 2",
@@ -191,18 +196,16 @@ func TestCanDeleteSessionByIndex(t *testing.T) {
 	tracker.DeleteByIndex(1)
 
 	if len(tracker.Sessions) != 1 {
-		t.Errorf("Expected 1 remaining session, got %d", len(tracker.Sessions))
+		t.Errorf("Expected 1 remaining Session, got %d", len(tracker.Sessions))
 	}
 
 	if !cmp.Equal(tracker.Sessions[0], remainingSession) {
-		t.Errorf("Expected remaining session: %+v, got: %+v", remainingSession, tracker.Sessions[0])
+		t.Errorf("Expected remaining Session: %+v, got: %+v", remainingSession, tracker.Sessions[0])
 	}
 }
 
 func TestCannotDeleteIfIndexIsOutOfRange(t *testing.T) {
-	tracker := tracker{
-		clock: realClock{},
-	}
+	tracker := NewTracker(TrackerConfig{})
 
 	err := tracker.DeleteByIndex(100)
 
@@ -212,9 +215,7 @@ func TestCannotDeleteIfIndexIsOutOfRange(t *testing.T) {
 }
 
 func TestDeleteIndexCannotBeNegative(t *testing.T) {
-	tracker := tracker{
-		clock: realClock{},
-	}
+	tracker := NewTracker(TrackerConfig{})
 
 	err := tracker.DeleteByIndex(-1)
 
@@ -224,23 +225,21 @@ func TestDeleteIndexCannotBeNegative(t *testing.T) {
 }
 
 func TestCanDeleteAllSessions(t *testing.T) {
-	tracker := tracker{
-		clock: realClock{},
-	}
+	tracker := NewTracker(TrackerConfig{})
 
-	tracker.Add(session{
+	tracker.Add(Session{
 		Start:       10,
 		End:         20,
 		Description: "test 1",
 	})
 
-	tracker.Add(session{
+	tracker.Add(Session{
 		Start:       10,
 		End:         20,
 		Description: "test 2",
 	})
 
-	tracker.Add(session{
+	tracker.Add(Session{
 		Start:       10,
 		End:         20,
 		Description: "test 3",
@@ -249,23 +248,20 @@ func TestCanDeleteAllSessions(t *testing.T) {
 	tracker.DeleteAll()
 
 	if len(tracker.Sessions) != 0 {
-		t.Errorf("Expected no sessions, got %d", len(tracker.Sessions))
+		t.Errorf("Expected no Sessions, got %d", len(tracker.Sessions))
 	}
 }
 
 func TestCanWriteToFile(t *testing.T) {
 	fileName := "test.json"
 
-	config := trackerConfig{
-		file: fileName,
+	config := TrackerConfig{
+		File: fileName,
 	}
 
-	tracker := tracker{
-		config: config,
-		clock:  realClock{},
-	}
+	tracker := NewTracker(config)
 
-	tracker.Add(session{
+	tracker.Add(Session{
 		Start:       10,
 		End:         20,
 		Description: "test 1",
@@ -288,6 +284,7 @@ func TestCanWriteToFile(t *testing.T) {
 	expected := trackerData{
 		Current:  tracker.Current,
 		Sessions: tracker.Sessions,
+		Totals:   tracker.Totals,
 	}
 
 	got := trackerData{}
@@ -302,13 +299,11 @@ func TestCanWriteToFile(t *testing.T) {
 func TestCanSetPathOfSaveFile(t *testing.T) {
 	fileName := "test_file_name.xyz"
 
-	config := trackerConfig{
-		file: fileName,
+	config := TrackerConfig{
+		File: fileName,
 	}
 
-	tracker := tracker{
-		config: config,
-	}
+	tracker := NewTracker(config)
 
 	tracker.Save()
 
@@ -320,16 +315,16 @@ func TestCanSetPathOfSaveFile(t *testing.T) {
 }
 
 func TestCanRestoreFromFile(t *testing.T) {
-	currentSession := session{
+	currentSession := Session{
 		Start:       123,
 		End:         5676,
 		Description: "dfgebsddsfsdf",
 	}
 
-	sessions := []session{
+	Sessions := []Session{
 		{
 			Start:       50,
-			End:         34,
+			End:         60,
 			Description: "TEST",
 		},
 		{
@@ -339,9 +334,15 @@ func TestCanRestoreFromFile(t *testing.T) {
 		},
 	}
 
+	Totals := []Total{
+		{"TEST", 10},
+		{"fff", 20},
+	}
+
 	data := trackerData{
 		Current:  currentSession,
-		Sessions: sessions,
+		Sessions: Sessions,
+		Totals:   Totals,
 	}
 
 	fileContent, _ := json.Marshal(data)
@@ -352,17 +353,101 @@ func TestCanRestoreFromFile(t *testing.T) {
 
 	defer os.Remove(fileName)
 
-	config := trackerConfig{
-		file: fileName,
+	config := TrackerConfig{
+		File: fileName,
 	}
 
-	tracker := tracker{
-		config: config,
-	}
+	tracker := NewTracker(config)
 
 	tracker.Restore()
 
 	if !cmp.Equal(tracker.trackerData, data) {
 		t.Errorf("Expected %+v, got %+v", data, tracker.trackerData)
+	}
+}
+
+func TestSessionsAreOrderedByStartTime(t *testing.T) {
+	tracker := NewTracker(TrackerConfig{})
+
+	tracker.Add(Session{
+		Start:       10,
+		End:         20,
+		Description: "test",
+	})
+
+	tracker.Add(Session{
+		Start:       5,
+		End:         30,
+		Description: "test 2",
+	})
+
+	tracker.Add(Session{
+		Start:       100,
+		End:         105,
+		Description: "test 3",
+	})
+
+	expected := "test 2testtest 3"
+	var got string
+
+	for _, session := range tracker.Sessions {
+		got += session.Description
+	}
+
+	if expected != got {
+		t.Errorf("Expected %s, got %s", expected, got)
+	}
+}
+
+func TestSessionsShouldOrderByEndTimeIfStartTimeTheSame(t *testing.T) {
+	tracker := NewTracker(TrackerConfig{})
+
+	tracker.Add(Session{
+		Start:       5,
+		End:         20,
+		Description: "test",
+	})
+
+	tracker.Add(Session{
+		Start:       100,
+		End:         120,
+		Description: "test 2",
+	})
+
+	tracker.Add(Session{
+		Start:       100,
+		End:         105,
+		Description: "test 3",
+	})
+
+	expected := "testtest 3test 2"
+	var got string
+
+	for _, session := range tracker.Sessions {
+		got += session.Description
+	}
+
+	if expected != got {
+		t.Errorf("Expected %s, got %s", expected, got)
+	}
+}
+
+func TestTotalsShouldMergeSessionsWithSameDescription(t *testing.T) {
+	tracker := NewTracker(TrackerConfig{})
+
+	tracker.Add(Session{
+		Start:       0,
+		End:         10,
+		Description: "TEST",
+	})
+
+	tracker.Add(Session{
+		Start:       30,
+		End:         45,
+		Description: "TEST",
+	})
+
+	if tracker.Totals[0].Total != 25 {
+		t.Errorf("Expected 25, got %d", tracker.Totals[0].Total)
 	}
 }
