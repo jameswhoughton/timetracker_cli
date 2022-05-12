@@ -10,23 +10,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-type StubClock struct {
-	time int64
-	inc  int64
-}
-
-func (sc *StubClock) Now() int64 {
-	sc.time += sc.inc
-	return sc.time
-}
-
-func newTestTracker(clock trackerClock, config TrackerConfig) *Tracker {
-	return &Tracker{
-		clock:  clock,
-		config: config,
-	}
-}
-
 func TestCanStartASession(t *testing.T) {
 	tracker := NewTracker(TrackerConfig{})
 
@@ -42,7 +25,7 @@ func TestCanEndASessionThatHasStarted(t *testing.T) {
 		inc: 5,
 	}
 
-	tracker := newTestTracker(clock, TrackerConfig{})
+	tracker := NewTestTracker(clock, TrackerConfig{})
 
 	tracker.Start()
 
@@ -64,7 +47,7 @@ func TestEndedSessionContainsTheCorrectPeriodLength(t *testing.T) {
 		inc: 5,
 	}
 
-	tracker := newTestTracker(clock, TrackerConfig{})
+	tracker := NewTestTracker(clock, TrackerConfig{})
 
 	tracker.SetDescription("test")
 
@@ -88,7 +71,7 @@ func TestCurrentShouldResetAfterEndingSession(t *testing.T) {
 		inc: 5,
 	}
 
-	tracker := newTestTracker(clock, TrackerConfig{})
+	tracker := NewTestTracker(clock, TrackerConfig{})
 
 	tracker.Start()
 
