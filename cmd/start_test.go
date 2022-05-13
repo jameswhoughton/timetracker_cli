@@ -48,3 +48,41 @@ func TestReturnMessageIfCurrentSessionAlreadyStarted(t *testing.T) {
 		t.Errorf("Expected start time to be %d, got %d", currentStartValue, tracker.Current.Start)
 	}
 }
+
+func TestCanAddDescriptionWhenStarting(t *testing.T) {
+	tracker := internal.NewTracker(internal.TrackerConfig{})
+
+	expected := "test description"
+
+	cmd := NewStartCmd(tracker)
+	cmd.SetArgs([]string{expected})
+	cmd.Execute()
+
+	if tracker.Current.Description == "" {
+		t.Errorf("Expected description '%s' got ''", expected)
+	}
+}
+
+func TestStartAcceptsOnlyOneArgument(t *testing.T) {
+	tracker := internal.NewTracker(internal.TrackerConfig{})
+
+	cmd := NewStartCmd(tracker)
+	cmd.SetArgs([]string{"a", "b"})
+	b := bytes.NewBufferString("")
+	cmd.SetErr(b)
+	cmd.Execute()
+
+	out, err := ioutil.ReadAll(b)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if string(out) == "" {
+		t.Error("Expected error, got ''")
+	}
+
+	if tracker.Current.Description == "a" {
+		t.Error("Description shouldn't be set on error")
+	}
+}
