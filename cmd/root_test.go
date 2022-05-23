@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"testing"
 	"timetracker_cli/internal"
+
+	"github.com/rodaine/table"
 )
 
 func TestRootCmdShouldReturnMessageIfNoSessions(t *testing.T) {
@@ -52,11 +54,24 @@ func TestRootCmdShouldListSessions(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expected := `TEST - 10s
-TEST 2 - 15s`
+	expectedTable := table.New("Description", "Total")
 
-	if string(out) != expected {
-		t.Fatalf("expected \"%s\" got \"%s\"", expected, string(out))
+	tableBuffer := bytes.NewBufferString("")
+	expectedTable.WithWriter(tableBuffer)
+
+	expectedTable.AddRow("TEST", "10s")
+	expectedTable.AddRow("TEST 2", "15s")
+
+	expectedTable.Print()
+
+	expected, err := ioutil.ReadAll(tableBuffer)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if bytes.Compare(out, expected) != 0 {
+		t.Fatalf("expected \"%s\" got \"%s\"", expected, out)
 	}
 }
 
@@ -86,10 +101,23 @@ func TestSessionsWithTheSameDescriptionShouldBeMerged(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expected := "TEST - 25s"
+	expectedTable := table.New("Description", "Total")
 
-	if string(out) != expected {
-		t.Errorf("Expected %s, got %s", expected, string(out))
+	tableBuffer := bytes.NewBufferString("")
+	expectedTable.WithWriter(tableBuffer)
+
+	expectedTable.AddRow("TEST", "25s")
+
+	expectedTable.Print()
+
+	expected, err := ioutil.ReadAll(tableBuffer)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if bytes.Compare(out, expected) != 0 {
+		t.Errorf("Expected %s, got %s", expected, out)
 	}
 }
 
@@ -125,11 +153,22 @@ func TestTotalsShouldBeHumanReadable(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expected := `TEST - 10s
-TEST 2 - 2m 8s
-TEST 3 - 11h 6m 40s`
+	expectedTable := table.New("Description", "Total")
+	expectedTable.AddRow("TEST", "10s")
+	expectedTable.AddRow("TEST 2", "2m 8s")
+	expectedTable.AddRow("TEST 3", "11h 6m 40s")
 
-	if string(out) != expected {
-		t.Errorf("Expected %s, got %s", expected, string(out))
+	tableBuffer := bytes.NewBufferString("")
+	expectedTable.WithWriter(tableBuffer)
+	expectedTable.Print()
+
+	expected, err := ioutil.ReadAll(tableBuffer)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if bytes.Compare(out, expected) != 0 {
+		t.Errorf("Expected %s, got %s", expected, out)
 	}
 }
