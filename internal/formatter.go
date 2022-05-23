@@ -1,6 +1,9 @@
 package internal
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 func FormatTotal(time int) string {
 	hours := time / 3600
@@ -26,4 +29,8 @@ func FormatTotal(time int) string {
 	}
 
 	return totalString
+}
+
+func FormatTime(timeStamp int64, format string) string {
+	return time.Unix(timeStamp, 0).UTC().Format(format)
 }
