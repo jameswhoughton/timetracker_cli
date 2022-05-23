@@ -21,8 +21,8 @@ func TestRootCmdShouldReturnMessageIfNoSessions(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if string(out) != "No Sessions" {
-		t.Errorf("Expected 'No Sessions', got %s", out)
+	if string(out) != "No sessions" {
+		t.Errorf("Expected 'No sessions', got %s", out)
 	}
 }
 

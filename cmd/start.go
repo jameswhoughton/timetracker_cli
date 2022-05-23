@@ -8,7 +8,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// startCmd represents the start command
 func NewStartCmd(tracker *internal.Tracker) *cobra.Command {
 	return &cobra.Command{
 		Use:   "start",
