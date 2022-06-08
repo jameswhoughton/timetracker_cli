@@ -434,3 +434,55 @@ func TestTotalsShouldMergeSessionsWithSameDescription(t *testing.T) {
 		t.Errorf("Expected 25, got %d", tracker.Totals[0].Total)
 	}
 }
+
+func TestTotalShouldUpdateWhenSessionDeleted(t *testing.T) {
+	tracker := NewTracker(TrackerConfig{})
+
+	tracker.Add(Session{
+		Start:       0,
+		End:         10,
+		Description: "TEST",
+	})
+
+	tracker.Add(Session{
+		Start:       30,
+		End:         45,
+		Description: "TEST",
+	})
+
+	if len(tracker.Totals) != 1 {
+		t.Fatal("Expected 'Totals' to include 1 total")
+	}
+
+	tracker.DeleteByIndex(1)
+
+	total := tracker.Totals[0]
+
+	if total.Total != 10 {
+		t.Errorf("Expected total to be 10, got %d", total.Total)
+	}
+}
+
+// Test total should be removed if no sessions no longer match description
+func TestTotalShouldBeRemovedIfAllSessionsDeleted(t *testing.T) {
+	tracker := NewTracker(TrackerConfig{})
+
+	tracker.Add(Session{
+		Start:       0,
+		End:         10,
+		Description: "TEST",
+	})
+
+	tracker.Add(Session{
+		Start:       30,
+		End:         45,
+		Description: "TEST",
+	})
+
+	tracker.DeleteByIndex(0)
+	tracker.DeleteByIndex(0)
+
+	if len(tracker.Totals) != 0 {
+		t.Errorf("Expected no totals, got %d", len(tracker.Totals))
+	}
+}

@@ -40,10 +40,14 @@ type TrackerConfig struct {
 }
 
 func NewTracker(config TrackerConfig) *Tracker {
-	return &Tracker{
+	tracker := Tracker{
 		config: config,
 		clock:  realClock{},
 	}
+
+	tracker.Restore()
+
+	return &tracker
 }
 
 type Tracker struct {
@@ -117,7 +121,20 @@ func (t *Tracker) DeleteByIndex(index int) error {
 		return errors.New("index is invalid")
 	}
 
+	sessionToDelete := t.Sessions[index]
+
 	t.Sessions = append(t.Sessions[:index], t.Sessions[index+1:]...)
+
+	for i, total := range t.Totals {
+		if total.Description == sessionToDelete.Description {
+			t.Totals[i].Total -= int(sessionToDelete.End - sessionToDelete.Start)
+
+			if t.Totals[i].Total == 0 {
+				t.Totals = append(t.Totals[:i], t.Totals[i+1:]...)
+			}
+			break
+		}
+	}
 
 	return nil
 }
