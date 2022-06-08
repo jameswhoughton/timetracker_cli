@@ -29,7 +29,7 @@ func NewEndCmd(tracker *internal.Tracker) *cobra.Command {
 				return errors.New("Cannot end a session without adding a description")
 			}
 
-			return nil
+			return tracker.End()
 		},
 	}
 }

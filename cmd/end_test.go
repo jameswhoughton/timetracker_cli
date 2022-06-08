@@ -27,7 +27,7 @@ func TestCannotEndSessionThatHasNotStarted(t *testing.T) {
 }
 
 func TestCanAddDescriptionWhenEnding(t *testing.T) {
-	tracker := internal.NewTracker(internal.TrackerConfig{})
+	tracker := internal.NewTestTracker(internal.NewStubClock(5), internal.TrackerConfig{})
 
 	tracker.Start()
 
@@ -37,7 +37,13 @@ func TestCanAddDescriptionWhenEnding(t *testing.T) {
 	cmd.SetArgs([]string{expected})
 	cmd.Execute()
 
-	if tracker.Current.Description == "" {
+	if len(tracker.Sessions) != 1 {
+		t.Fatalf("Expected 1 saved session got %d", len(tracker.Sessions))
+	}
+
+	savedSession := tracker.Sessions[0]
+
+	if savedSession.Description == "" {
 		t.Errorf("Expected description '%s' got ''", expected)
 	}
 }
@@ -86,5 +92,21 @@ func TestCannotEndSessionWithoutDescription(t *testing.T) {
 
 	if string(out) == "" {
 		t.Error("Expected error, got none")
+	}
+}
+
+func TestCanEndASession(t *testing.T) {
+	tracker := internal.NewTestTracker(internal.NewStubClock(5), internal.TrackerConfig{})
+
+	tracker.Start()
+
+	expected := "test description"
+
+	cmd := NewEndCmd(tracker)
+	cmd.SetArgs([]string{expected})
+	cmd.Execute()
+
+	if len(tracker.Sessions) != 1 {
+		t.Errorf("Expected 1 saved session got %d", len(tracker.Sessions))
 	}
 }
