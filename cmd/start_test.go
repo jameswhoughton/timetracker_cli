@@ -29,7 +29,7 @@ func TestReturnMessageIfCurrentSessionAlreadyStarted(t *testing.T) {
 
 	cmd := NewStartCmd(tracker)
 	b := bytes.NewBufferString("")
-	cmd.SetOut(b)
+	cmd.SetErr(b)
 	cmd.Execute()
 
 	out, err := ioutil.ReadAll(b)
@@ -38,10 +38,8 @@ func TestReturnMessageIfCurrentSessionAlreadyStarted(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expected := "Session has already started"
-
-	if string(out) != expected {
-		t.Errorf("expected '%s', got '%s'", expected, out)
+	if string(out) == "" {
+		t.Error("expected error, got none")
 	}
 
 	if currentStartValue != tracker.Current.Start {

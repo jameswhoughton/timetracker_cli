@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
 	"timetracker_cli/internal"
 
 	"github.com/spf13/cobra"
@@ -15,8 +14,7 @@ func NewStartCmd(tracker *internal.Tracker) *cobra.Command {
 		Long:  `Starts a new tracking session only if session is not in progress`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if tracker.Current.Start > 0 {
-				fmt.Fprint(cmd.OutOrStdout(), "Session has already started")
-				return nil
+				return errors.New("Session has already started")
 			}
 
 			if len(args) > 1 {
