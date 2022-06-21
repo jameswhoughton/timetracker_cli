@@ -12,11 +12,13 @@ func setup(tracker *internal.Tracker) {
 	startCmd := cmd.NewStartCmd(tracker)
 	endCmd := cmd.NewEndCmd(tracker)
 	deletetCmd := cmd.NewDeleteCmd(tracker)
+	addCmd := cmd.NewAddCmd(tracker)
 
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(startCmd)
 	rootCmd.AddCommand(endCmd)
 	rootCmd.AddCommand(deletetCmd)
+	rootCmd.AddCommand(addCmd)
 
 	rootCmd.Execute()
 }
