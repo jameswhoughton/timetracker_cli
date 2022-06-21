@@ -10,7 +10,7 @@ import (
 func TestCanDeleteSessionByIndex(t *testing.T) {
 	tracker := internal.NewTracker(internal.TrackerConfig{})
 
-	tracker.Add(internal.Session{0, 10, "test"})
+	tracker.Add(internal.Session{Start: 0, End: 10, Description: "test"})
 
 	cmd := NewDeleteCmd(tracker)
 	cmd.SetArgs([]string{"1"})
