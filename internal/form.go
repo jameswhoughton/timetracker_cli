@@ -49,7 +49,7 @@ func DescriptionInput() string {
 		AllowEdit: true,
 		Validate: func(input string) error {
 			if len(input) == 0 {
-				return errors.New("Description required")
+				return errors.New("description required")
 			}
 
 			return nil

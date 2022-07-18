@@ -70,7 +70,7 @@ func TestRootCmdShouldListSessions(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if bytes.Compare(out, expected) != 0 {
+	if !bytes.Equal(out, expected) {
 		t.Fatalf("expected \"%s\" got \"%s\"", expected, out)
 	}
 }
@@ -116,7 +116,7 @@ func TestSessionsWithTheSameDescriptionShouldBeMerged(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if bytes.Compare(out, expected) != 0 {
+	if !bytes.Equal(out, expected) {
 		t.Errorf("Expected %s, got %s", expected, out)
 	}
 }
@@ -168,7 +168,7 @@ func TestTotalsShouldBeHumanReadable(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if bytes.Compare(out, expected) != 0 {
+	if !bytes.Equal(out, expected) {
 		t.Errorf("Expected %s, got %s", expected, out)
 	}
 }

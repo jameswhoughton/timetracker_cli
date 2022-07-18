@@ -75,7 +75,7 @@ func TestListSessionsInTable(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if bytes.Compare(expected, out) != 0 {
+	if !bytes.Equal(expected, out) {
 		t.Errorf("Expected:\n%s\n\nGot:\n%s", expected, out)
 	}
 }

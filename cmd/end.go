@@ -14,11 +14,11 @@ func NewEndCmd(tracker *internal.Tracker) *cobra.Command {
 		Long:  `End the current session with an optional description`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if tracker.Current.Start == 0 {
-				return errors.New("Cannot end a session that hasn't started")
+				return errors.New("cannot end a session that hasn't started")
 			}
 
 			if len(args) > 1 {
-				return errors.New("End only accepts 0 or 1 arguments")
+				return errors.New("end only accepts 0 or 1 arguments")
 			}
 
 			if len(args) == 1 {
@@ -26,7 +26,7 @@ func NewEndCmd(tracker *internal.Tracker) *cobra.Command {
 			}
 
 			if tracker.Current.Description == "" {
-				return errors.New("Cannot end a session without adding a description")
+				return errors.New("cannot end a session without adding a description")
 			}
 
 			return tracker.End()

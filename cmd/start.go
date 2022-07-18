@@ -14,7 +14,7 @@ func NewStartCmd(tracker *internal.Tracker) *cobra.Command {
 		Long:  `Starts a new tracking session only if session is not in progress`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if tracker.Current.Start > 0 {
-				return errors.New("Session has already started")
+				return errors.New("session has already started")
 			}
 
 			if len(args) > 1 {
