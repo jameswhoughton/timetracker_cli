@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"os"
 	"timetracker_cli/cmd"
 	"timetracker_cli/internal"
 )
@@ -23,10 +25,18 @@ func setup(tracker *internal.Tracker) {
 	rootCmd.Execute()
 }
 
+var config_path string
+
 func main() {
-	config := internal.TrackerConfig{
-		File: "session.json",
+	configFile, err := os.ReadFile(config_path)
+
+	if err != nil {
+		panic(err)
 	}
+
+	config := internal.TrackerConfig{}
+
+	json.Unmarshal(configFile, &config)
 
 	tracker := internal.NewTracker(config)
 	defer tracker.Save()
