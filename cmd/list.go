@@ -8,7 +8,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewListCmd(tracker *internal.Tracker) *cobra.Command {
+type ListConfig struct {
+	RoundBy int
+}
+
+func NewListCmd(tracker *internal.Tracker, config ListConfig) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
 		Short: "List all sessions",

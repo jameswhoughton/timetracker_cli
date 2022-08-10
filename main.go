@@ -7,10 +7,10 @@ import (
 	"timetracker_cli/internal"
 )
 
-func setup(tracker *internal.Tracker) {
+func setup(tracker *internal.Tracker, config config) {
 	rootCmd := cmd.NewRootCmd(tracker)
 
-	listCmd := cmd.NewListCmd(tracker)
+	listCmd := cmd.NewListCmd(tracker, cmd.ListConfig{RoundBy: config.RoundBy})
 	startCmd := cmd.NewStartCmd(tracker)
 	endCmd := cmd.NewEndCmd(tracker)
 	deletetCmd := cmd.NewDeleteCmd(tracker)
@@ -27,6 +27,11 @@ func setup(tracker *internal.Tracker) {
 
 var config_path string
 
+type config struct {
+	SessionFile string `json:session_file`
+	RoundBy     int    `json:round_by`
+}
+
 func main() {
 	configFile, err := os.ReadFile(config_path)
 
@@ -34,12 +39,12 @@ func main() {
 		panic(err)
 	}
 
-	config := internal.TrackerConfig{}
+	config := config{}
 
 	json.Unmarshal(configFile, &config)
 
-	tracker := internal.NewTracker(config)
+	tracker := internal.NewTracker(internal.TrackerConfig{File: config.SessionFile})
 	defer tracker.Save()
 
-	setup(tracker)
+	setup(tracker, config)
 }
