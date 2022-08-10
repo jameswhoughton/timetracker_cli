@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"math"
 	"time"
 )
 
@@ -33,4 +34,12 @@ func FormatTotal(time int) string {
 
 func FormatTime(timeStamp int64, format string) string {
 	return time.Unix(timeStamp, 0).UTC().Format(format)
+}
+
+func Round(time, roundBy int) int {
+	if time < roundBy/2 {
+		return roundBy
+	}
+
+	return int(float64(roundBy) * math.Round(float64(time)/float64(roundBy)))
 }

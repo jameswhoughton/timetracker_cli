@@ -23,15 +23,28 @@ func NewListCmd(tracker *internal.Tracker, config ListConfig) *cobra.Command {
 				return
 			}
 
-			sessionTable := table.New("ID", "Description", "Start", "End", "Length")
+			headers := []interface{}{"ID", "Description", "Start", "End", "Length"}
 
+			if config.RoundBy > 0 {
+				headers = append(headers, "Rounded")
+			}
+
+			sessionTable := table.New(headers...)
 			sessionTable.WithWriter(cmd.OutOrStdout())
 
 			for id, session := range tracker.Sessions {
-				start := internal.FormatTime(session.Start, "02/01/06 15:04:05")
-				end := internal.FormatTime(session.End, "02/01/06 15:04:05")
-				length := internal.FormatTotal(int(session.End - session.Start))
-				sessionTable.AddRow(id+1, session.Description, start, end, length)
+				row := []interface{}{
+					id + 1,
+					session.Description,
+					internal.FormatTime(session.Start, "02/01/06 15:04:05"),
+					internal.FormatTime(session.End, "02/01/06 15:04:05"),
+					internal.FormatTotal(int(session.End - session.Start)),
+				}
+
+				if config.RoundBy > 0 {
+					row = append(row, internal.FormatTotal(internal.Round(int(session.End-session.Start), config.RoundBy)))
+				}
+				sessionTable.AddRow(row...)
 			}
 
 			sessionTable.Print()
