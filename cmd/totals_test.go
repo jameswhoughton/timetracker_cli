@@ -9,10 +9,10 @@ import (
 	"github.com/rodaine/table"
 )
 
-func TestRootCmdShouldReturnMessageIfNoSessions(t *testing.T) {
+func TestTotalsCmdReturnsMessageIfNoSessions(t *testing.T) {
 	tracker := internal.NewTracker(internal.TrackerConfig{})
 
-	cmd := NewRootCmd(tracker)
+	cmd := NewTotalsCmd(tracker, TotalsConfig{})
 	b := bytes.NewBufferString("")
 	cmd.SetOut(b)
 	cmd.Execute()
@@ -24,26 +24,32 @@ func TestRootCmdShouldReturnMessageIfNoSessions(t *testing.T) {
 	}
 
 	if string(out) != "No sessions" {
-		t.Errorf("Expected 'No sessions', got %s", out)
+		t.Errorf("Expected 'No sessions' got '%s'", out)
 	}
 }
 
-func TestRootCmdShouldListSessions(t *testing.T) {
+func TestTotalsCmdReturnsTableOfTotals(t *testing.T) {
 	tracker := internal.NewTracker(internal.TrackerConfig{})
 
 	tracker.Add(internal.Session{
 		Start:       0,
-		End:         10,
-		Description: "TEST",
+		End:         100,
+		Description: "test",
 	})
 
 	tracker.Add(internal.Session{
 		Start:       30,
-		End:         45,
-		Description: "TEST 2",
+		End:         40,
+		Description: "test",
 	})
 
-	cmd := NewRootCmd(tracker)
+	tracker.Add(internal.Session{
+		Start:       60,
+		End:         65,
+		Description: "test 2",
+	})
+
+	cmd := NewTotalsCmd(tracker, TotalsConfig{})
 	b := bytes.NewBufferString("")
 	cmd.SetOut(b)
 	cmd.Execute()
@@ -55,13 +61,11 @@ func TestRootCmdShouldListSessions(t *testing.T) {
 	}
 
 	expectedTable := table.New("Description", "Total")
+	expectedTable.AddRow("test", "1m 50s")
+	expectedTable.AddRow("test 2", "5s")
 
 	tableBuffer := bytes.NewBufferString("")
 	expectedTable.WithWriter(tableBuffer)
-
-	expectedTable.AddRow("TEST", "10s")
-	expectedTable.AddRow("TEST 2", "15s")
-
 	expectedTable.Print()
 
 	expected, err := ioutil.ReadAll(tableBuffer)
@@ -70,8 +74,8 @@ func TestRootCmdShouldListSessions(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !bytes.Equal(out, expected) {
-		t.Fatalf("expected \"%s\" got \"%s\"", expected, out)
+	if !bytes.Equal(expected, out) {
+		t.Errorf("Expected:\n%s\n\nGot:\n%s", expected, out)
 	}
 }
 
@@ -90,7 +94,7 @@ func TestSessionsWithTheSameDescriptionShouldBeMerged(t *testing.T) {
 		Description: "TEST",
 	})
 
-	cmd := NewRootCmd(tracker)
+	cmd := NewTotalsCmd(tracker, TotalsConfig{})
 	b := bytes.NewBufferString("")
 	cmd.SetOut(b)
 	cmd.Execute()
@@ -142,7 +146,7 @@ func TestTotalsShouldBeHumanReadable(t *testing.T) {
 		Description: "TEST 3",
 	})
 
-	cmd := NewRootCmd(tracker)
+	cmd := NewTotalsCmd(tracker, TotalsConfig{})
 	b := bytes.NewBufferString("")
 	cmd.SetOut(b)
 	cmd.Execute()
@@ -170,5 +174,56 @@ func TestTotalsShouldBeHumanReadable(t *testing.T) {
 
 	if !bytes.Equal(out, expected) {
 		t.Errorf("Expected %s, got %s", expected, out)
+	}
+}
+
+func TestTotalsShouldIncludeRoundedIfRoundByGreaterThan0(t *testing.T) {
+	tracker := internal.NewTracker(internal.TrackerConfig{})
+
+	tracker.Add(internal.Session{
+		Start:       0,
+		End:         100,
+		Description: "test",
+	})
+
+	tracker.Add(internal.Session{
+		Start:       30,
+		End:         40,
+		Description: "test",
+	})
+
+	tracker.Add(internal.Session{
+		Start:       60,
+		End:         65,
+		Description: "test 2",
+	})
+
+	cmd := NewTotalsCmd(tracker, TotalsConfig{RoundBy: 15})
+	b := bytes.NewBufferString("")
+	cmd.SetOut(b)
+	cmd.Execute()
+
+	out, err := ioutil.ReadAll(b)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedTable := table.New("Description", "Total", "Rounded")
+	expectedTable.AddRow("test", "1m 50s", "1m 45s")
+	expectedTable.AddRow("test 2", "5s", "15s")
+
+	tableBuffer := bytes.NewBufferString("")
+	expectedTable.WithWriter(tableBuffer)
+	expectedTable.Print()
+
+	expected, err := ioutil.ReadAll(tableBuffer)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !bytes.Equal(expected, out) {
+		t.Errorf("Expected:\n%s\n\nGot:\n%s", expected, out)
 	}
 }
