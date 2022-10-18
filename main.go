@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"os"
 	"timetracker_cli/cmd"
 	"timetracker_cli/internal"
@@ -27,23 +26,37 @@ func setup(tracker *internal.Tracker, config config) {
 	rootCmd.Execute()
 }
 
-var config_path string
+var sessionFile string
+var roundBy int
 
 type config struct {
-	SessionFile string `json:session_file`
-	RoundBy     int    `json:round_by`
+	SessionFile string
+	RoundBy     int
+}
+
+func loadConfig() config {
+	if sessionFile == "" {
+		userDir, _ := os.UserConfigDir()
+
+		if _, err := os.Stat(userDir + "/tt"); err != nil {
+			os.Mkdir(userDir+"/tt", os.ModePerm)
+		}
+
+		sessionFile = userDir + "/tt/session.json"
+	}
+
+	if roundBy == 0 {
+		roundBy = 900
+	}
+
+	return config{
+		SessionFile: sessionFile,
+		RoundBy:     roundBy,
+	}
 }
 
 func main() {
-	configFile, err := os.ReadFile(config_path)
-
-	if err != nil {
-		panic(err)
-	}
-
-	config := config{}
-
-	json.Unmarshal(configFile, &config)
+	config := loadConfig()
 
 	tracker := internal.NewTracker(internal.TrackerConfig{File: config.SessionFile})
 	defer tracker.Save()
