@@ -8,15 +8,17 @@ import (
 )
 
 func setup(tracker *internal.Tracker, config config) {
-	rootCmd := cmd.NewRootCmd(tracker)
+	rootCmd := cmd.NewRootCmd()
 
 	listCmd := cmd.NewListCmd(tracker, cmd.ListConfig{RoundBy: config.RoundBy})
+	totalsCmd := cmd.NewTotalsCmd(tracker, cmd.TotalsConfig{RoundBy: config.RoundBy})
 	startCmd := cmd.NewStartCmd(tracker)
 	endCmd := cmd.NewEndCmd(tracker)
 	deletetCmd := cmd.NewDeleteCmd(tracker)
 	addCmd := cmd.NewAddCmd(tracker)
 
 	rootCmd.AddCommand(listCmd)
+	rootCmd.AddCommand(totalsCmd)
 	rootCmd.AddCommand(startCmd)
 	rootCmd.AddCommand(endCmd)
 	rootCmd.AddCommand(deletetCmd)
